@@ -48,8 +48,16 @@ export function formatNumber(value: number, digits = 0): string {
 
 /** Число со знаком: +3,2 и −1,0 (типографский минус, как в ТЗ) */
 export function formatSigned(value: number, digits = 1): string {
-  const sign = value > 0 ? '+' : value < 0 ? '−' : '';
-  return sign + formatNumber(Math.abs(value), digits);
+  // Знак берём у округлённого числа: −0,04 при одном знаке — это «0,0», а не «−0,0»
+  const rounded = Number(value.toFixed(digits));
+  const sign = rounded > 0 ? '+' : rounded < 0 ? '−' : '';
+  return sign + formatNumber(Math.abs(rounded), digits);
+}
+
+/** Часы: целые — без запятой, дробные (после шагов от фактического среднего) — с одним знаком */
+export function formatHours(value: number): string {
+  const r = Math.round(value);
+  return Math.abs(value - r) < 0.05 ? formatNumber(r) : formatNumber(value, 1);
 }
 
 /** Процент без пробела перед знаком: 70% */

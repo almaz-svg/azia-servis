@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Dataset } from '@/core/types';
 import { makeDemoDataset } from '@/data/demo';
 import { clearStoredUpload, loadStoredUpload, storeUpload } from '@/data/store';
@@ -26,7 +26,15 @@ interface AppState {
 
 const AppContext = createContext<AppState | null>(null);
 
+/**
+ * Язык — внешнее хранилище (localStorage), React читает его через useSyncExternalStore.
+ * memoryLang держит выбор на сессию, если localStorage недоступен (приватный режим).
+ */
+let memoryLang: Lang | null = null;
+const langListeners = new Set<() => void>();
+
 function readLang(): Lang {
+  if (memoryLang) return memoryLang;
   try {
     const v = window.localStorage.getItem(LANG_KEY);
     return v === 'kk' || v === 'ru' ? v : DEFAULT_LANG;
@@ -35,12 +43,26 @@ function readLang(): Lang {
   }
 }
 
+function subscribeLang(listener: () => void): () => void {
+  langListeners.add(listener);
+  return () => langListeners.delete(listener);
+}
+
+function writeLang(next: Lang): void {
+  memoryLang = next;
+  try {
+    window.localStorage.setItem(LANG_KEY, next);
+  } catch {
+    // Приватный режим: язык останется на сессию
+  }
+  for (const listener of langListeners) listener();
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
+  const lang = useSyncExternalStore(subscribeLang, readLang, () => DEFAULT_LANG);
   const [dataset, setDataset] = useState<Dataset | null>(null);
 
   useEffect(() => {
-    setLangState(readLang());
     let cancelled = false;
     (async () => {
       const stored = await loadStoredUpload().catch(() => null);
@@ -57,14 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  const setLang = useCallback((next: Lang) => {
-    setLangState(next);
-    try {
-      window.localStorage.setItem(LANG_KEY, next);
-    } catch {
-      // Приватный режим: язык останется на сессию
-    }
-  }, []);
+  const setLang = useCallback((next: Lang) => writeLang(next), []);
 
   const setUpload = useCallback((next: Dataset) => {
     setDataset(next);

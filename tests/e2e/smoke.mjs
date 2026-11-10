@@ -131,6 +131,39 @@ try {
   await page.waitForSelector('.demo-badge', { timeout: 15000 });
   check('«Очистить данные» возвращает демо-данные', true);
 
+  // 10. Часы → обоснование: числа записки совпадают с экраном, текст копируется (F7)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => undefined);
+  await page.click('a.rail-link[href="/hours"]');
+  await page.waitForSelector('.note-text', { timeout: 15000 });
+  const noteBefore = await page.textContent('.note-text');
+  check('обоснование: метка демо и проблемные темы в тексте',
+    noteBefore.includes('Демо-данные') && noteBefore.includes('«Обыкновенные дроби» — проблема учебника') &&
+      noteBefore.includes('«Проценты» — проблема программы'));
+  check('обоснование: до перераспределения «Часы не менялись»', noteBefore.includes('Часы не менялись.'));
+
+  await page.click('button:has-text("Перераспределить часы")');
+  await page.waitForFunction(() => !document.querySelector('.note-text')?.textContent?.includes('Часы не менялись.'), null, { timeout: 15000 });
+  const noteAfter = await page.textContent('.note-text');
+  const forecast = (await page.textContent('.hours-side .verdict-line')).split(' п.п.')[0];
+  check('обоснование: прогноз совпадает с экраном', noteAfter.includes(`Прогноз: ${forecast} п.п.`), forecast);
+  const changed = await page.$$eval('.stepper-row', (rows) =>
+    rows.map((r) => ({
+      topic: r.querySelector('strong')?.textContent ?? '',
+      lines: [...r.querySelectorAll('.stepper-name .muted')].map((x) => x.textContent ?? ''),
+    })).filter((r) => { const [a, b] = r.lines[0].replace(' ч', '').split(' → '); return a !== b; }));
+  check('обоснование: каждая изменённая тема записана с теми же часами и эффектом',
+    changed.length >= 2 && changed.every((r) => noteAfter.includes(`«${r.topic}»: ${r.lines[0]}, ${r.lines[1]}`)),
+    `тем=${changed.length}`);
+
+  await page.click('button:has-text("Скопировать обоснование")');
+  await page.waitForFunction(() => document.querySelector('.note-panel [role="status"]')?.textContent !== '', null, { timeout: 5000 });
+  const copyStatus = await page.textContent('.note-panel [role="status"]');
+  check('обоснование: «Обоснование скопировано»', copyStatus === 'Обоснование скопировано', copyStatus);
+  const clip = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
+  // Windows кладёт в буфер переводы строк как CRLF
+  if (clip !== null) check('обоснование: в буфере тот же текст, что на экране', clip.replace(/\r\n/g, '\n') === noteAfter);
+  await page.screenshot({ path: join(OUT, '10-hours-note.png'), fullPage: true });
+
   if (pageErrors.length > 0) check('нет ошибок JavaScript на странице', false, pageErrors.join(' | '));
   else check('нет ошибок JavaScript на странице', true);
 } catch (err) {

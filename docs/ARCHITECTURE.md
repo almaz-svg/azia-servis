@@ -61,7 +61,7 @@ src/
   workers/       Web Worker: parse (SheetJS) и вызовы core; типизированный RPC
   data/          демо-генератор (seed), шаблон Excel, IndexedDB
   i18n/          ru.json, kk.json, форматтеры чисел и склонений
-  features/      экраны: app, shell, data, topics, textbooks, hours. Ещё нет: trial (участник, проектор), export
+  features/      экраны: app, shell, data, topics, textbooks, hours, note (текст обоснования). Ещё нет: trial (участник, проектор), экспорт .docx
   ui/            примитивы и токены (CSS-переменные из раздела «Дизайн-система» ТЗ). Пока пусто; стили в app/globals.css
   app/           маршруты Next.js; app/api/note/route.ts — единственный серверный маршрут, пока не создан (К5)
 supabase/
@@ -500,6 +500,12 @@ alter table trial_sessions enable row level security;   -- то же для вс
 - Прогноз по 7.8 усредняет по темам. При одном переносе он даёт около +0,04 п.п. Если нужна сумма, меняется формула 7.8.
 - Казахские строки К3 — перевод без проверки носителем (см. раздел 16, пункт 4).
 - Нет иконки сайта: браузер получает 404 на `favicon.ico`.
+
+### После К3 — обоснование (часть К5)
+
+- `src/core/note.ts`: `buildNoteFacts(analysis, view)` — числа и коды из готовых расчётов, без строк школ.
+- `src/features/note`: `renderTemplateNote(lang, facts)` и блок «Обоснование» на экране «Часы» с кнопкой копирования. Шаблон живёт в `features`, а не в `core`, потому что текст строится через словари.
+- Не сделано: `/api/note`, LLM и `validateNote`; .docx. Подробный список изменений после К3 — в [PROGRESS.md](PROGRESS.md).
 
 ### Поддержка проекта (после К3)
 

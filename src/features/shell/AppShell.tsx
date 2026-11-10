@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { ANALYSIS_CONFIG } from '@/core/config';
 import { useApp } from '@/features/app/AppProvider';
 import { LANGS, t, type Lang } from '@/i18n';
 
@@ -74,7 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
       </div>
 
-      <footer className="app-footer">{t(lang, 'app.config', { version: '1.0.0' })}</footer>
+      <footer className="app-footer">{t(lang, 'app.config', { version: ANALYSIS_CONFIG.version })}</footer>
     </div>
   );
 }

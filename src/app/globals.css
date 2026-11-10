@@ -23,8 +23,8 @@
   --rail-width: 232px;
   --content-max: 1280px;
 
-  --font-verdict: 'Unbounded', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-body: 'Golos Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-verdict: var(--font-unbounded), system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-body: var(--font-golos), system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -712,6 +712,13 @@ a.rail-link:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* На телефоне график сжимается вдвое: увеличиваем подписи в единицах viewBox, чтобы они оставались около 10 px */
+@media (max-width: 640px) {
+  .curve-tick {
+    font-size: 20px;
+  }
+}
+
 .curve-target {
   stroke: var(--ink-quiet);
   stroke-width: 1;
@@ -849,4 +856,23 @@ a.rail-link:hover {
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+}
+
+/* Обоснование: текст записки как лист тетради — линейка слева, без рамки и тени */
+.note-panel {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.note-text {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--pen-blue);
+  max-width: 76ch;
 }

@@ -2,7 +2,7 @@ import { fitCurve, type CurveFit, type CurvePoint } from './curve';
 import type { AnalysisConfig } from './config';
 import { compareTextbooks, weightedMean, type TextbookComparison } from './stats/compare';
 import { classifyTopic, TEXTBOOKS, type ComparisonSkip, type TopicStatus } from './status';
-import type { Dataset, LessonRow, ResultRow, Textbook } from './types';
+import type { Dataset, ResultRow, Textbook } from './types';
 
 /**
  * Сборка всех расчётов для экранов. Один объект Analysis — один источник чисел:

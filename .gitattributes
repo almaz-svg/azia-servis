@@ -1,0 +1,6 @@
+# Окончания строк: в репозитории всегда LF, чтобы Windows и macOS не спорили
+* text=auto eol=lf
+*.png binary
+*.ico binary
+*.xlsx binary
+*.docx binary

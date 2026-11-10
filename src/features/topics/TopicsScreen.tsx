@@ -27,11 +27,12 @@ export function TopicsScreen() {
   useEffect(() => {
     if (!dataset) return;
     let cancelled = false;
-    setFailure(null);
     analysisClient()
       .analyze(dataset, scope)
       .then((a) => {
-        if (!cancelled) setAnalysis(a);
+        if (cancelled) return;
+        setFailure(null);
+        setAnalysis(a);
       })
       .catch((err: unknown) => {
         if (!cancelled) setFailure(err instanceof Error ? err.message : String(err));

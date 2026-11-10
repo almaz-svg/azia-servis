@@ -45,6 +45,23 @@ const TOPIC_BASE: Record<DemoTopic, number> = {
   'Уравнения': 72,
 };
 
+/**
+ * Отдача одного часа сверх плана, п.п. освоения. Темы различаются: в одних класс уже вышел на полку,
+ * в других дополнительный урок ещё заметно помогает. Без этого различия перераспределять часы незачем.
+ */
+const HOUR_EFFECT: Record<DemoTopic, number> = {
+  'Натуральные числа': 0.15,   // насыщена: тему знают
+  'Делимость': 0.3,
+  'Обыкновенные дроби': 1.2,   // час ещё работает
+  'Десятичные дроби': 0.7,
+  'Проценты': 1.3,             // трудная тема: часов не хватает
+  'Отношения и пропорции': 0.25,
+  'Положительные и отрицательные числа': 0.5,
+  'Рациональные числа': 0.9,
+  'Буквенные выражения': 0.35,
+  'Уравнения': 0.6,
+};
+
 interface SchoolSpec {
   code: string;
   district: string;
@@ -113,12 +130,12 @@ export function generateDemoRows(seed: number = DEMO_SEED): { results: ResultRow
         const actualHours = DEMO_PLANNED_HOURS + extraHours + rng.int(-2, 2);
         const noise = rng.int(-4, 4);
 
-        // Освоение: база темы + входной уровень + учебник + небольшой эффект часов + шум.
+        // Освоение: база темы + входной уровень + учебник + эффект часов (свой у каждой темы) + шум.
         const raw =
           TOPIC_BASE[topic] +
           Math.round(0.4 * (entry - 60)) +
           textbookEffect(topic, textbook) +
-          Math.round(0.6 * (actualHours - DEMO_PLANNED_HOURS)) +
+          Math.round(HOUR_EFFECT[topic] * (actualHours - DEMO_PLANNED_HOURS)) +
           noise;
 
         results.push({

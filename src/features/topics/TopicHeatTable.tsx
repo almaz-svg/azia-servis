@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import type { Analysis, SchoolCell } from '@/core/analysis';
 import { formatNumber, t, type Lang } from '@/i18n';
 import { StatusChip } from './StatusChip';
@@ -29,9 +29,36 @@ function cellHint(lang: Lang, school: string, cell: SchoolCell): string {
   return t(lang, 'topics.cell.mixed', { school, value, classes: formatNumber(cell.classes) });
 }
 
+/**
+ * Стрелки ходят по ячейкам (ТЗ, «Доступность»). В таблицу входит один Tab: фокус получает первая ячейка,
+ * остальные доступны стрелками, Home и End. Подсказка ячейки читается из aria-label.
+ */
+function moveFocus(e: KeyboardEvent<HTMLTableElement>, rows: number, cols: number) {
+  const cell = (e.target as HTMLElement).closest<HTMLElement>('[data-row]');
+  if (!cell) return;
+  let row = Number(cell.dataset.row);
+  let col = Number(cell.dataset.col);
+  switch (e.key) {
+    case 'ArrowRight': col += 1; break;
+    case 'ArrowLeft': col -= 1; break;
+    case 'ArrowDown': row += 1; break;
+    case 'ArrowUp': row -= 1; break;
+    case 'Home': col = 0; break;
+    case 'End': col = cols - 1; break;
+    default: return;
+  }
+  if (row < 0 || row >= rows || col < 0 || col >= cols) return;
+  const next = e.currentTarget.querySelector<HTMLElement>(`[data-row="${row}"][data-col="${col}"]`);
+  if (!next) return;
+  e.preventDefault();
+  next.focus();
+}
+
 export function TopicHeatTable({ analysis, lang }: { analysis: Analysis; lang: Lang }) {
+  const rows = analysis.topics.length;
+  const cols = analysis.schools.length;
   return (
-    <table className="heat">
+    <table className="heat" onKeyDown={(e) => moveFocus(e, rows, cols)}>
       <caption className="sr-only">{t(lang, 'topics.caption')}</caption>
       <thead>
         <tr>
@@ -42,7 +69,7 @@ export function TopicHeatTable({ analysis, lang }: { analysis: Analysis; lang: L
         </tr>
       </thead>
       <tbody>
-        {analysis.topics.map((topic) => (
+        {analysis.topics.map((topic, row) => (
           <tr key={topic.topic}>
             <th scope="row" className="heat-topic">
               <span className="topic-name">{topic.topic}</span>
@@ -52,11 +79,18 @@ export function TopicHeatTable({ analysis, lang }: { analysis: Analysis; lang: L
                 {topic.overall === null ? t(lang, 'value.empty') : `${formatNumber(topic.overall)}%`}
               </span>
             </th>
-            {analysis.schools.map((school) => {
+            {analysis.schools.map((school, col) => {
               const cell = topic.cells[school];
+              const nav = { 'data-row': row, 'data-col': col, tabIndex: row === 0 && col === 0 ? 0 : -1 };
               if (!cell) {
                 return (
-                  <td key={school} className="heat-cell is-empty" title={t(lang, 'topics.cell.empty', { school })}>
+                  <td
+                    key={school}
+                    {...nav}
+                    className="heat-cell is-empty"
+                    title={t(lang, 'topics.cell.empty', { school })}
+                    aria-label={`${topic.topic}. ${t(lang, 'topics.cell.empty', { school })}`}
+                  >
                     {t(lang, 'value.empty')}
                   </td>
                 );
@@ -64,9 +98,11 @@ export function TopicHeatTable({ analysis, lang }: { analysis: Analysis; lang: L
               return (
                 <td
                   key={school}
+                  {...nav}
                   className="heat-cell"
                   style={cellStyle(cell.mastery)}
                   title={cellHint(lang, school, cell)}
+                  aria-label={`${topic.topic}. ${cellHint(lang, school, cell)}`}
                 >
                   {formatNumber(cell.mastery)}
                 </td>

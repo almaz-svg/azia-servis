@@ -7,7 +7,8 @@ import type { HourRequest, HourRow, HourView, StopReason } from '@/core/hours';
 import { TEXTBOOKS } from '@/core/status';
 import { useApp } from '@/features/app/AppProvider';
 import { analysisClient } from '@/workers/client';
-import { formatNumber, formatSigned, t, type Lang } from '@/i18n';
+import { NotePanel } from '@/features/note/NotePanel';
+import { formatHours, formatNumber, formatSigned, t, type Lang } from '@/i18n';
 import { HourCurve } from './HourCurve';
 
 /**
@@ -30,11 +31,11 @@ export function HoursScreen() {
   useEffect(() => {
     if (!dataset) return;
     let cancelled = false;
-    setFailure(null);
     const client = analysisClient();
     Promise.all([client.analyze(dataset, {}), client.plan(dataset, { kind: 'view' })])
       .then(([a, v]) => {
         if (cancelled) return;
+        setFailure(null);
         setAnalysis(a);
         setView(v);
         setTopic((prev) => (a.topics.some((x) => x.topic === prev) ? prev : (a.topics[0]?.topic ?? '')));
@@ -82,7 +83,10 @@ export function HoursScreen() {
         <p className="muted">{t(lang, 'topics.noRows')}</p>
       ) : (
         <div className="hours-layout">
-          <CurvePanel lang={lang} analysis={analysis} topic={topic} onTopic={setTopic} />
+          <div className="hours-main">
+            <CurvePanel lang={lang} analysis={analysis} topic={topic} onTopic={setTopic} />
+            <NotePanel lang={lang} analysis={analysis} view={view} />
+          </div>
           <OptimizerPanel
             lang={lang}
             view={view}
@@ -117,7 +121,7 @@ function CurvePanel({
   const summary = lines.join('. ');
 
   return (
-    <div className="hours-main">
+    <>
       <label className="topic-pick">
         <span>{t(lang, 'hours.topic')}</span>
         <select value={ta.topic} onChange={(e) => onTopic(e.target.value)}>
@@ -163,7 +167,7 @@ function CurvePanel({
           </tbody>
         </table>
       </details>
-    </div>
+    </>
   );
 }
 
@@ -314,10 +318,4 @@ function stopText(lang: Lang, stop: StopReason | null): string {
     default:
       return '';
   }
-}
-
-/** Часы: целые — без запятой, дробные (после шагов от фактического среднего) — с одним знаком */
-function formatHours(v: number): string {
-  const r = Math.round(v);
-  return Math.abs(v - r) < 0.05 ? formatNumber(r) : formatNumber(v, 1);
 }
